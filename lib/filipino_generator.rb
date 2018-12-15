@@ -41,8 +41,8 @@ class CountryProvinceMunicipality
     CountryProvinceMunicipality.new.tap do |cpm|
       cpm.country = 'PHILIPPINES'
       province = PROVINCES.sample
-      cpm.province_or_state = province.name.upcase
-      cpm.city_or_municipality = province.random_city_or_municipality.name.upcase
+      cpm.province_or_state = province.name.upcase.tr("',","")
+      cpm.city_or_municipality = province.random_city_or_municipality.name.upcase.tr("',","")
     end
   end
 end
@@ -59,10 +59,10 @@ class Address < CountryProvinceMunicipality
     Address.new.tap do |address|
       address.country = 'PHILIPPINES'
       province = PROVINCES.sample
-      address.province_or_state = province.name.upcase
-      address.city_or_municipality = province.random_city_or_municipality.name.upcase
-      address.line_1 = FFaker::Address.street_address.upcase
-      address.line_2 = FFaker::Address.neighborhood.upcase
+      address.province_or_state = province.name.upcase.tr("',","")
+      address.city_or_municipality = province.random_city_or_municipality.name.upcase.tr("',","")
+      address.line_1 = FFaker::Address.street_address.upcase.tr("',","")
+      address.line_2 = FFaker::Address.neighborhood.upcase.tr("',","")
       address.zip_code = random_zip_code
     end
   end
@@ -92,6 +92,8 @@ class GovernmentId
                   when 'CRN'
                     random_not_starting_with_zero(12)
                   end
+      id.valid_until = FFaker::Time.between(1.year.from_now, 10.years.from_now).to_date.strftime('%m/%d/%Y')
+      id.image_file = 'images/' + Random.rand(18).to_s + '.jpeg'
     end
   end
 end
@@ -116,10 +118,14 @@ class Person
   attr_accessor :permanent_address, :present_address
 
   attr_accessor :mobile_number
+  attr_accessor :landline
+  attr_accessor :email
   attr_accessor :nature_of_work, :source_of_funds, :industry, :name_of_employer
   attr_accessor :tin, :sss, :gsis, :crn
-  attr_accessor :photograph, :specimen_signature
-  attr_accessor :government_id
+  attr_accessor :photograph 
+  attr_accessor :specimen_signature
+  attr_accessor :government_id1
+  attr_accessor :government_id2
 
   def full_name
     [first_name, middle_name, last_name, suffix].reject(&:blank?).join(' ')
@@ -147,25 +153,25 @@ class Person
   }.freeze
 
   PSIC = <<~PSIC
-    Agriculture, forestry and fishing
+    Agriculture forestry and fishing
     Mining and quarrying
     Manufacturing
-    Electricity, gas, steam and air-conditioning supply
-    Water supply, sewerage, waste management and
+    Electricity gas steam and air-conditioning supply
+    Water supply sewerage waste management and
     remediation activities
     Construction
-    Wholesale and retail trade; repair of motor vehicles and motorcycles
+    Wholesale and retail trade repair of motor vehicles and motorcycles
     Transportation and storage
     Accommodation and food service activities
     Information and communication
     Financial and insurance activities
     Real estate activities
-    Professional, scientific and technical services
+    Professional scientific and technical services
     Administrative and support service activities
-    Public administrative and defense; compulsory social security
+    Public administrative and defense compulsory social security
     Education
     Human health and social work activities
-    Arts, entertainment and recreation
+    Arts entertainment and recreation
     Household and Domestic Services
   PSIC
          .lines.map { |s| s.chomp.upcase }
@@ -203,7 +209,7 @@ class Person
       ([prefix] + Array.new(digits).map { Random.rand(10) }).join
     end
 
-    # Generate a Person record using FFaker
+    # Generate a Person record using pr
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
     def generate
       # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
@@ -214,68 +220,102 @@ class Person
         # 20% of the population will have a second name
         n_names = Random.rand(5).zero? ? 2 : 1
         p.first_name = Array.new(n_names).map do
-          male ? FFaker::NamePH.first_name_male : FFaker::NamePH.first_name_female
-        end.map(&:upcase).join(' ')
-        p.middle_name = FFaker::NamePH.last_name.upcase
-        p.last_name = FFaker::NamePH.last_name.upcase
+          male ? FFaker::NamePH.first_name_male.tr("',","") : FFaker::NamePH.first_name_female
+        end.map(&:upcase).join(' ').tr("',","")
+        p.middle_name = FFaker::NamePH.last_name.upcase.tr("',","")
+        p.last_name = FFaker::NamePH.last_name.upcase.tr("',","")
         # 5% of Male to have Sr. 5% of Male to have Jr.
         if male
           case Random.rand(20)
           when 0
-            p.suffix = 'SR.'
+            p.suffix = 'sr'
           when 1
-            p.suffix = 'JR.'
+            p.suffix = 'jr'
+          when 2
+            p.suffix = 'ii'
+          when 3
+            p.suffix = 'iii'
+          when 4
+            p.suffix = 'iv'
           end
         end
-        p.sex = male ? 'MALE' : 'FEMALE'
+        p.sex = male ? 'M' : 'F'
 
-        p.birth_date = FFaker::Time.between(70.years.ago, 18.years.ago).to_date.iso8601
+        p.birth_date = FFaker::Time.between(70.years.ago, 18.years.ago).to_date.strftime('%m/%d/%Y')
 
         p.place_of_birth = CountryProvinceMunicipality.random
 
         p.permanent_address = Address.random
-
         # 33% will have a different present address from permanent address
         p.present_address = Random.rand(3).zero? ? Address.random : p.permanent_address
 
         # (+63) + "9" + randomize 9 random numbers
         p.mobile_number = '+639' + Array.new(9) { Random.rand(10) }.join
-
+        p.landline = Array.new(7) {Random.rand(10)}.join 
+        p.email = rand(26**5).to_s(10) + '@gmail.com' 
         p.nationality = 'PHILIPPINES'
 
         p.nature_of_work = random_nature_of_work
         p.source_of_funds = SOURCE_OF_FUNDS[p.nature_of_work]
         if ['EMPLOYED', 'BUSINESS OWNER/FREELANCER', 'OFW'].include?(p.nature_of_work)
           p.industry = PSIC.sample
-          p.name_of_employer = FFaker::Company.name.upcase
+          p.name_of_employer = FFaker::Company.name.upcase.tr("',","")
         end
+
+        p.photograph = 'images/pic_' + Random.rand(9).to_s + '.jpeg'
+        p.specimen_signature = 'images/sig_' + Random.rand(3).to_s + '.jpeg'
 
         # ONLY IF Nature of Work is NOT Unemployed, Student or Homemaker
         # then choose randomly between generating a TIN, GSIS, SSS, CRN
         unless %w[UNEMPLOYED STUDENT HOMEMAKER].include?(p.nature_of_work)
-          id = GovernmentId.random_tin_gsis_sss_or_crn
-          case id.type
+          id1 = GovernmentId.random_tin_gsis_sss_or_crn
+          case id1.type
           when 'TIN'
-            p.tin = id.number
+            p.tin = id1.number
           when 'GSIS'
-            p.gsis = id.number
+            p.gsis = id1.number
           when 'SSS'
-            p.sss = id.number
+            p.sss = id1.number
           when 'CRN'
-            p.crn = id.number
+            p.crn = id1.number
           end
         end
 
-        id = GovernmentId.random_tin_gsis_sss_or_crn
+        id2 = GovernmentId.random_tin_gsis_sss_or_crn
         case p.nature_of_work
         when 'HOMEMAKER'
-          id.type = 'PASSPORT'
-          id.number = random_passport_number
+          id2.type = 'PASSPORT'
+          id2.number = random_passport_number
         when 'STUDENT'
-          id.type = 'STUDENT ID'
-          id.number = random_not_starting_with_zero(10)
+          id2.type = 'STUDENT ID'
+          id2.number = random_not_starting_with_zero(10)
         end
-        p.government_id = id
+        p.government_id1 = id1
+
+        unless %w[UNEMPLOYED STUDENT HOMEMAKER].include?(p.nature_of_work)
+          id2 = GovernmentId.random_tin_gsis_sss_or_crn
+          case id2.type
+          when 'TIN'
+            p.tin = id2.number
+          when 'GSIS'
+            p.gsis = id2.number
+          when 'SSS'
+            p.sss = id2.number
+          when 'CRN'
+            p.crn = id2.number
+          end
+        end 
+
+        id2 = GovernmentId.random_tin_gsis_sss_or_crn
+        case p.nature_of_work
+        when 'HOMEMAKER'
+          id2.type = 'PASSPORT'
+          id2.number = random_passport_number
+        when 'STUDENT'
+          id2.type = 'STUDENT ID'
+          id2.number = random_not_starting_with_zero(10)
+        end
+        p.government_id2 = id2
       end
     end
   end
