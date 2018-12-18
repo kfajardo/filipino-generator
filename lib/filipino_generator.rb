@@ -39,10 +39,10 @@ class CountryProvinceMunicipality
 
   def self.random
     CountryProvinceMunicipality.new.tap do |cpm|
-      cpm.country = 'PHILIPPINES'
+      cpm.country = 'Philippines'
       province = PROVINCES.sample
-      cpm.province_or_state = province.name.upcase.tr("',","")
-      cpm.city_or_municipality = province.random_city_or_municipality.name.upcase.tr("',","")
+      cpm.province_or_state = province.name.tr("',","").capitalize
+      cpm.city_or_municipality = province.random_city_or_municipality.name.tr("',","").capitalize
     end
   end
 end
@@ -57,12 +57,12 @@ class Address < CountryProvinceMunicipality
 
   def self.random
     Address.new.tap do |address|
-      address.country = 'PHILIPPINES'
+      address.country = 'Philippines'
       province = PROVINCES.sample
-      address.province_or_state = province.name.upcase.tr("',","")
-      address.city_or_municipality = province.random_city_or_municipality.name.upcase.tr("',","")
-      address.line_1 = FFaker::Address.street_address.upcase.tr("',","")
-      address.line_2 = FFaker::Address.neighborhood.upcase.tr("',","")
+      address.province_or_state = province.name.tr("',","").capitalize
+      address.city_or_municipality = province.random_city_or_municipality.name.tr("',","").capitalize
+      address.line_1 = FFaker::Address.street_address.tr("',","")
+      address.line_2 = FFaker::Address.neighborhood.tr("',","")
       address.zip_code = random_zip_code
     end
   end
@@ -132,24 +132,24 @@ class Person
   end
 
   NATURE_OF_WORK = {
-    'EMPLOYED' => 30,
-    'BUSINESS OWNER/FREELANCER' => 25,
-    'UNEMPLOYED' => 5,
-    'PENSIONER/RETIRED/HOMEMAKER' => 10,
-    'STUDENT' => 10,
+    'Employed' => 30,
+    'Business Owner/Freelancer' => 25,
+    'Unemployed' => 5,
+    'Pensioner/Retired/Homemaker' => 10,
+    'Student' => 10,
     'OFW' => 20
   }.freeze
 
   SOURCE_OF_FUNDS = {
-    'EMPLOYED' => 'SALARY',
-    'BUSINESS OWNER' => 'INCOME FROM BUSINESS',
-    'FREELANCER' => 'INCOME FROM BUSINESS',
-    'UNEMPLOYED' => 'REMITTANCES',
-    'PENSIONER' => 'REMITTANCES',
-    'RETIRED' => 'REMITTANCES',
-    'HOMEMAKER' => 'REMITTANCES',
-    'STUDENT' => 'SUPPORT FROM RELATIVES',
-    'OFW' => 'SALARY'
+    'Employed' => 'Salary',
+    'Business Owner' => 'Income from Business',
+    'Freelancer' => 'Income from Business',
+    'Unemployed' => 'Remittances',
+    'Pensioner' => 'Remittances',
+    'Retired' => 'Remittances',
+    'Homemaker' => 'Remittances',
+    'Student' => 'Support from Relatives',
+    'OFW' => 'Salary'
   }.freeze
 
   PSIC = <<~PSIC
@@ -174,7 +174,7 @@ class Person
     Arts entertainment and recreation
     Household and Domestic Services
   PSIC
-         .lines.map { |s| s.chomp.upcase }
+         .lines.map { |s| s.chomp }
 
   class << self
     # Randomized according to
@@ -221,22 +221,22 @@ class Person
         n_names = Random.rand(5).zero? ? 2 : 1
         p.first_name = Array.new(n_names).map do
           male ? FFaker::NamePH.first_name_male.tr("',","") : FFaker::NamePH.first_name_female
-        end.map(&:upcase).join(' ').tr("',","")
-        p.middle_name = FFaker::NamePH.last_name.upcase.tr("',","")
-        p.last_name = FFaker::NamePH.last_name.upcase.tr("',","")
+        end.join(' ').tr("',","")
+        p.middle_name = FFaker::NamePH.last_name.tr("',","")
+        p.last_name = FFaker::NamePH.last_name.tr("',","")
         # 5% of Male to have Sr. 5% of Male to have Jr.
         if male
           case Random.rand(20)
           when 0
-            p.suffix = 'sr'
+            p.suffix = 'Sr'
           when 1
-            p.suffix = 'jr'
+            p.suffix = 'Jr'
           when 2
-            p.suffix = 'ii'
+            p.suffix = 'II'
           when 3
-            p.suffix = 'iii'
+            p.suffix = 'III'
           when 4
-            p.suffix = 'iv'
+            p.suffix = 'IV'
           end
         end
         p.sex = male ? 'M' : 'F'
@@ -250,16 +250,16 @@ class Person
         p.present_address = Random.rand(3).zero? ? Address.random : p.permanent_address
 
         # (+63) + "9" + randomize 9 random numbers
-        p.mobile_number = '+639' + Array.new(9) { Random.rand(10) }.join
+        p.mobile_number = '+639' + Array.new(9) { Random.rand(10) }.join + ''
         p.landline = Array.new(7) {Random.rand(10)}.join 
         p.email = rand(26**5).to_s(10) + '@gmail.com' 
-        p.nationality = 'PHILIPPINES'
+        p.nationality = 'Philippines'
 
         p.nature_of_work = random_nature_of_work
         p.source_of_funds = SOURCE_OF_FUNDS[p.nature_of_work]
-        if ['EMPLOYED', 'BUSINESS OWNER/FREELANCER', 'OFW'].include?(p.nature_of_work)
+        if ['Employed', 'Business Owner/Freelancer', 'OFW'].include?(p.nature_of_work)
           p.industry = PSIC.sample
-          p.name_of_employer = FFaker::Company.name.upcase.tr("',","")
+          p.name_of_employer = FFaker::Company.name.tr("',","")
         end
 
         p.photograph = 'images/pic_' + Random.rand(9).to_s + '.jpeg'
@@ -267,7 +267,7 @@ class Person
 
         # ONLY IF Nature of Work is NOT Unemployed, Student or Homemaker
         # then choose randomly between generating a TIN, GSIS, SSS, CRN
-        unless %w[UNEMPLOYED STUDENT HOMEMAKER].include?(p.nature_of_work)
+        unless %w[Unemployed Student Homemaker].include?(p.nature_of_work)
           id1 = GovernmentId.random_tin_gsis_sss_or_crn
           case id1.type
           when 'TIN'
@@ -283,16 +283,16 @@ class Person
 
         id2 = GovernmentId.random_tin_gsis_sss_or_crn
         case p.nature_of_work
-        when 'HOMEMAKER'
+        when 'Homemaker'
           id2.type = 'PASSPORT'
           id2.number = random_passport_number
-        when 'STUDENT'
+        when 'Student'
           id2.type = 'STUDENT ID'
           id2.number = random_not_starting_with_zero(10)
         end
         p.government_id1 = id1
 
-        unless %w[UNEMPLOYED STUDENT HOMEMAKER].include?(p.nature_of_work)
+        unless %w[Unemployed Student Homemaker].include?(p.nature_of_work)
           id2 = GovernmentId.random_tin_gsis_sss_or_crn
           case id2.type
           when 'TIN'
