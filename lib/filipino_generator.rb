@@ -92,7 +92,7 @@ class GovernmentId
                   when 'CRN'
                     random_not_starting_with_zero(12)
                   end
-      id.valid_until = FFaker::Time.between(1.year.from_now, 10.years.from_now).to_date.strftime('%m/%d/%Y')
+      id.valid_until = FFaker::Time.between(1.year.from_now, 10.years.from_now).to_date.strftime('%b/%d/%Y')
       id.image_file = 'images/' + Random.rand(18).to_s + '.jpeg'
     end
   end
@@ -241,7 +241,7 @@ class Person
         end
         p.sex = male ? 'M' : 'F'
 
-        p.birth_date = FFaker::Time.between(70.years.ago, 18.years.ago).to_date.strftime('%m/%d/%Y')
+        p.birth_date = FFaker::Time.between(70.years.ago, 18.years.ago).to_date.strftime('%b/%d/%Y')
 
         p.place_of_birth = CountryProvinceMunicipality.random
 
