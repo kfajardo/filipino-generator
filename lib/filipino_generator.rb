@@ -86,20 +86,20 @@ class GovernmentId
   attr_accessor :image_file
 
   # Also allows
-  TYPES = ['TIN', 'GSIS', 'SSS', 'CRN', 'PASSPORT', 'STUDENT ID'].freeze
+  TYPES = ['id-01', 'id-02', 'id-03', 'id-04', 'id-05', 'id-06', 'id-07', 'id-08', 'id-09', 'id-10', 'id-11', 'id-12'].freeze
 
   # Generates a random government TIN, GSIS, SSS or CRN
   def self.random_tin_gsis_sss_or_crn
     GovernmentId.new.tap do |id|
-      id.type = TYPES.take(4).sample
+      id.type = TYPES.sample
       id.number = case id.type
-                  when 'TIN'
-                    random_not_starting_with_zero(12)
-                  when 'GSIS'
-                    random_not_starting_with_zero(11)
-                  when 'SSS'
+                  when 'id-03'
                     random_not_starting_with_zero(10)
-                  when 'CRN'
+                  when 'id-12'
+                    random_not_starting_with_zero(11)
+                  when 'id-05'
+                    random_not_starting_with_zero(9)
+                  else 
                     random_not_starting_with_zero(12)
                   end
       id.valid_until = FFaker::Time.between(1.year.from_now, 10.years.from_now).to_date.strftime('%b/%d/%Y')
@@ -142,47 +142,45 @@ class Person
   end
 
   NATURE_OF_WORK = {
-    'Employed' => 30,
-    'Business Owner/Freelancer' => 25,
-    'Unemployed' => 5,
-    'Pensioner/Retired/Homemaker' => 10,
-    'Student' => 10,
-    'OFW' => 20
+    'employed' => 30,
+    'business' => 25,
+    'unemployed' => 5,
+    'retired' => 5,
+    'homemaker' => 5,
+    'student' => 10,
+    'ofw' => 20
   }.freeze
 
   SOURCE_OF_FUNDS = {
-    'Employed' => 'Salary',
-    'Business Owner' => 'Income from Business',
-    'Freelancer' => 'Income from Business',
-    'Unemployed' => 'Remittances',
-    'Pensioner' => 'Remittances',
-    'Retired' => 'Remittances',
-    'Homemaker' => 'Remittances',
-    'Student' => 'Support from Relatives',
-    'OFW' => 'Salary'
+    'employed' => 'salary',
+    'business' => 'income-business',
+    'unemployed' => 'remittances',
+    'retired' => 'remittances',
+    'homemaker' => 'remittances',
+    'student' => 'support-relatives',
+    'ofw' => 'salary'
   }.freeze
 
   PSIC = <<~PSIC
-    Agriculture forestry and fishing
-    Mining and quarrying
-    Manufacturing
-    Electricity gas steam and air-conditioning supply
-    Water supply sewerage waste management and
-    remediation activities
-    Construction
-    Wholesale and retail trade repair of motor vehicles and motorcycles
-    Transportation and storage
-    Accommodation and food service activities
-    Information and communication
-    Financial and insurance activities
-    Real estate activities
-    Professional scientific and technical services
-    Administrative and support service activities
-    Public administrative and defense compulsory social security
-    Education
-    Human health and social work activities
-    Arts entertainment and recreation
-    Household and Domestic Services
+    agriculture
+    mining
+    manufacturing
+    electricity
+    water
+    construction
+    trade
+    transportation
+    hrm
+    it
+    finance
+    real-estate
+    professional
+    admin
+    public
+    education
+    social
+    arts
+    domestic
   PSIC
          .lines.map { |s| s.chomp }
 
@@ -190,9 +188,9 @@ class Person
     # Randomized according to
     # 30% Employed
     # 25% Business Owner/Freelancer
-    # 5% Unemployed
-    # 10% Pensioner/Retired/Homemaker
-    # 10% Student
+    # 5% unemployed
+    # 10% Pensioner/Retired/homemaker
+    # 10% student
     # 20% OFW
     def random_nature_of_work
       raw_nature_of_work.split('/').sample
@@ -238,18 +236,18 @@ class Person
         if male
           case Random.rand(20)
           when 0
-            p.suffix = 'Sr'
+            p.suffix = 'sr'
           when 1
-            p.suffix = 'Jr'
+            p.suffix = 'jr'
           when 2
-            p.suffix = 'II'
+            p.suffix = 'ii'
           when 3
-            p.suffix = 'III'
+            p.suffix = 'iii'
           when 4
-            p.suffix = 'IV'
+            p.suffix = 'iv'
           end
         end
-        p.sex = male ? 'M' : 'F'
+        p.sex = male ? 'm' : 'f'
 
         p.birth_date = FFaker::Time.between(70.years.ago, 18.years.ago).to_date.strftime('%b/%d/%Y')
 
@@ -263,11 +261,11 @@ class Person
         p.mobile_number = '+639' + Array.new(9) { Random.rand(10) }.join + ''
         p.landline = Array.new(7) {Random.rand(10)}.join 
         p.email = rand(26**5).to_s(10) + '@gmail.com' 
-        p.nationality = 'Philippines'
+        p.nationality = 'PH'
 
         p.nature_of_work = random_nature_of_work
         p.source_of_funds = SOURCE_OF_FUNDS[p.nature_of_work]
-        if ['Employed', 'Business Owner/Freelancer', 'OFW'].include?(p.nature_of_work)
+        if ['employed', 'business', 'ofw'].include?(p.nature_of_work)
           p.industry = PSIC.sample
           p.name_of_employer = FFaker::Company.name.tr("',","")
         end
@@ -275,54 +273,54 @@ class Person
         p.photograph = 'images/pic_' + Random.rand(9).to_s + '.jpeg'
         p.specimen_signature = 'images/sig_' + Random.rand(3).to_s + '.jpeg'
 
-        # ONLY IF Nature of Work is NOT Unemployed, Student or Homemaker
+        # ONLY IF Nature of Work is NOT unemployed, Student or homemaker
         # then choose randomly between generating a TIN, GSIS, SSS, CRN
-        unless %w[Unemployed Student Homemaker].include?(p.nature_of_work)
+        unless %w[unemployed student homemaker].include?(p.nature_of_work)
           id1 = GovernmentId.random_tin_gsis_sss_or_crn
           case id1.type
-          when 'TIN'
-            p.tin = id1.number
-          when 'GSIS'
-            p.gsis = id1.number
-          when 'SSS'
+          when 'id-03'
             p.sss = id1.number
-          when 'CRN'
+          when 'id-12'
+            p.gsis = id1.number
+          when 'id-05'
+            p.tin = id1.number
+          else 
             p.crn = id1.number
           end
         end
 
         id2 = GovernmentId.random_tin_gsis_sss_or_crn
         case p.nature_of_work
-        when 'Homemaker'
-          id2.type = 'PASSPORT'
+        when 'homemaker'
+          id2.type = 'id-01'
           id2.number = random_passport_number
-        when 'Student'
-          id2.type = 'STUDENT ID'
+        when 'student'
+          id2.type = 'id-04'
           id2.number = random_not_starting_with_zero(10)
         end
         p.government_id1 = id1
 
-        unless %w[Unemployed Student Homemaker].include?(p.nature_of_work)
+        unless %w[unemployed student homemaker].include?(p.nature_of_work)
           id2 = GovernmentId.random_tin_gsis_sss_or_crn
           case id2.type
-          when 'TIN'
-            p.tin = id2.number
-          when 'GSIS'
-            p.gsis = id2.number
-          when 'SSS'
+          when 'id-03'
             p.sss = id2.number
-          when 'CRN'
+          when 'id-12'
+            p.gsis = id2.number
+          when 'id-05'
+            p.tin = id2.number
+          else 
             p.crn = id2.number
           end
         end 
 
         id2 = GovernmentId.random_tin_gsis_sss_or_crn
         case p.nature_of_work
-        when 'HOMEMAKER'
-          id2.type = 'PASSPORT'
+        when 'homemaker'
+          id2.type = 'id-01'
           id2.number = random_passport_number
-        when 'STUDENT'
-          id2.type = 'STUDENT ID'
+        when 'student'
+          id2.type = 'id-04'
           id2.number = random_not_starting_with_zero(10)
         end
         p.government_id2 = id2
